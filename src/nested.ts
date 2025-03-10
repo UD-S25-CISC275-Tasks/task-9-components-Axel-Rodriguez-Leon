@@ -1,6 +1,7 @@
 import { Answer } from "./interfaces/answer";
 import { Question, QuestionType } from "./interfaces/question";
 import { makeBlankQuestion } from "./objects";
+import { duplicateQuestion } from "./objects";
 
 /**
  * Consumes an array of questions and returns a new array with only the questions
@@ -181,7 +182,19 @@ export function changeQuestionTypeById(
     targetId: number,
     newQuestionType: QuestionType,
 ): Question[] {
-    return [];
+    return questions.map(
+        (question: Question): Question => ({
+            ...question,
+            type: question.id === targetId ? newQuestionType : question.type,
+            options:
+                (
+                    question.id === targetId &&
+                    newQuestionType !== "multiple_choice_question"
+                ) ?
+                    []
+                :   question.options,
+        }),
+    );
 }
 
 /**
@@ -194,13 +207,35 @@ export function changeQuestionTypeById(
  * Remember, if a function starts getting too complicated, think about how a helper function
  * can make it simpler! Break down complicated tasks into little pieces.
  */
+export function editByIndex(
+    targetOptionIndex: number,
+    newOption: string,
+    options: string[],
+): string[] {
+    return targetOptionIndex === -1 ?
+            [...options, newOption]
+        :   [
+                ...options.slice(0, targetOptionIndex),
+                newOption,
+                ...options.slice(targetOptionIndex + 1),
+            ];
+}
+
 export function editOption(
     questions: Question[],
     targetId: number,
     targetOptionIndex: number,
     newOption: string,
 ): Question[] {
-    return [];
+    return questions.map(
+        (question: Question): Question => ({
+            ...question,
+            options:
+                question.id === targetId ?
+                    editByIndex(targetOptionIndex, newOption, question.options)
+                :   question.options,
+        }),
+    );
 }
 
 /***
@@ -214,5 +249,11 @@ export function duplicateQuestionInArray(
     targetId: number,
     newId: number,
 ): Question[] {
-    return [];
+    return questions.reduce((acc: Question[], question: Question) => {
+        // If the current question matches the targetId, concatenate the original
+        // and the duplicated question. Otherwise, just concatenate the original question.
+        return question.id === targetId ?
+                acc.concat([question, duplicateQuestion(newId, question)])
+            :   acc.concat(question);
+    }, []);
 }
